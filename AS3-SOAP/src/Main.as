@@ -29,6 +29,10 @@ package
 			initUI();
 			initEvent();
 		}
+		/**
+		 * Function initUI
+		 * - Use for create user interface 
+		 */
 		private function initUI():void {
 			//crate container for all display object
 			var _container:Sprite = new Sprite();
@@ -71,36 +75,86 @@ package
 			_container.x = (stage.stageWidth-_container.width) / 2;
 			_container.y = (stage.stageHeight-_container.height) / 2;
 		}
+		
+		/**
+		 * Function initEvent
+		 * - Add all event listener 
+		 */
 		private function initEvent():void{
+			//Add Mouse CLICK event to _btn_send
 			_btn_send.addEventListener(MouseEvent.CLICK,onClickCall);
 		}
 		
-		//Event func
+		/**
+		 * Function onClickCall
+		 * - Mouse click event callback function for "_btn_send"
+		 * @param MouseEvent evt
+		 */
 		private function onClickCall(evt:MouseEvent):void {
-			_webservice = new WebService();
-			_webservice.loadWSDL("http://mysoap.local/v1/wsdl");
+			//your web service url
+			var _urlWebService:String = "http://mysoap.local/v1";
 			
-			var qname:QName = new QName("http://mysoap.local/v1/wsdl","Authentication");
+			//create new WebService instance 
+			_webservice = new WebService();
+			
+			//load WSDL from web service url
+			_webservice.loadWSDL(_urlWebService+"/wsdl");
+			
+			//Add soap header block
+			//For this sample, need "Authentiction" header block for every request
+			//create new QName instance  
+			var qname:QName = new QName(_urlWebService,"Authentication");
+			//create object data ( username & key )
 			var objAuth:Object = new Object();
 			objAuth.username = "demo";
 			objAuth.key = "demo";
+			
+			//create new SOAPHeader from QName & object date
 			var authHeader:SOAPHeader = new SOAPHeader(qname,objAuth);
+			//add soap header to webserice instance
 			_webservice.addHeader(authHeader);
 			
+			//Add load WSDL completed event listener 
 			_webservice.addEventListener(LoadEvent.LOAD, onLoadWSDL_Complete_AndSayHello);
 		}
+		
+		/**
+		 * Function onLoadWSDL_Complete_AndSayHello
+		 * - Load WSDL completed event listener 
+		 * @param LoadEvent e
+		 */
 		private function onLoadWSDL_Complete_AndSayHello(e:LoadEvent):void{
+			//Get "SayHello" operation from soap service
 			_serviceOperation = _webservice.getOperation("SayHello");
+			
+			//Add FaultEvent fail to "SayHello" operation
 			_serviceOperation.addEventListener(FaultEvent.FAULT, DisplayError);
+			//Add ResultEvent result to "SayHello" operation
 			_serviceOperation.addEventListener(ResultEvent.RESULT, DisplayResult);
+			
+			//Add argument to "SayHello" Operation , for this sample use text value from _inp_txt
 			_serviceOperation.arguments = [_inp_txt.text];
+			
+			//send requst
 			_serviceOperation.send();
 			return;
 		}
+		
+		/**
+		 * Functin DisplayError
+		 * - Display eror when request soap web service fail
+		 * @param FaultEvent e
+		 */
 		private function DisplayError(e:FaultEvent):void {
 			_serviceOperation.removeEventListener(FaultEvent.FAULT, DisplayError);
 			_result_txt.text = e.fault.toString()
 		}
+		
+		/**
+		 * Function DisplayResult
+		 * - Display result message
+		 * @param ResultEvent e
+		 */
 		private function DisplayResult(e:ResultEvent):void {
 			_serviceOperation.addEventListener(ResultEvent.RESULT, DisplayResult);
 			_result_txt.text = e.result.message;
